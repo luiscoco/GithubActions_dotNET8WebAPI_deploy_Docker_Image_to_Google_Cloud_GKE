@@ -59,4 +59,5 @@ jobs:
 
     - name: Update Deployment with new image
       run: |
-        kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} ${{ env.IMAGE_NAME }}=${{ env.REPOSITORY }}/${{
+        kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} ${{ env.IMAGE_NAME }}=${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+        kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }}
