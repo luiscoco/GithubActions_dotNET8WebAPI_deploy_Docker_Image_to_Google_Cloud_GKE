@@ -1,19 +1,21 @@
-name: Build, Push and Deploy Docker Image to GKE with Kubernetes Configurations
+name: Build, Push, and Deploy to GKE
 
 on:
   push:
     branches:
-      - master
+      - main
 
 env:
-  PROJECT_ID: extreme-axon-381209
-  IMAGE_NAME: my-dotnetwebapi
-  REPOSITORY: europe-southwest1-docker.pkg.dev/extreme-axon-381209/myfirstrepo
+  PROJECT_ID: your-project-id
+  IMAGE_NAME: your-image-name
+  REPOSITORY: your-gcr-repository
   TAG: latest
   GKE_CLUSTER: your-cluster-name
-  GKE_ZONE: europe-southwest1
-  DEPLOYMENT_NAME: my-deployment
+  GKE_ZONE: your-cluster-zone
+  DEPLOYMENT_NAME: your-deployment-name
   CONTAINER_PORT: 80
+  KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+  GOOGLE_CLOUD_CREDENTIALS: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
 
 jobs:
   build-push-deploy:
@@ -21,68 +23,34 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v2
 
-    - name: Configure Docker for Google Cloud Artifact Registry
+    - name: Set up Google Cloud SDK
+      uses: GoogleCloudPlatform/github-actions/setup-gcloud@v1
+      with:
+        service_account_key: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
+        export_default_credentials: true
+
+    - name: Configure Docker for Google Cloud Registry
       run: |
-        echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' | gcloud auth activate-service-account --key-file=-
-        gcloud auth configure-docker europe-southwest1-docker.pkg.dev --quiet
+        echo ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }} | gcloud auth activate-service-account --key-file=-
+        gcloud auth configure-docker us.gcr.io --quiet
 
     - name: Build Docker image
       run: |
-        docker build -t ${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} .
+        docker build -t ${{ env.REPOSITORY }}:${{ env.TAG }} .
+        docker tag ${{ env.REPOSITORY }}:${{ env.TAG }} us.gcr.io/${{ env.REPOSITORY }}:${{ env.TAG }}
 
-    - name: Push Docker image
+    - name: Push Docker image to Google Cloud Registry
       run: |
-        docker push ${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+        docker push us.gcr.io/${{ env.REPOSITORY }}:${{ env.TAG }}
 
-    - name: Verify the image was pushed
+    - name: Authenticate Kubectl
       run: |
-        gcloud artifacts docker images list ${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}
-
-    - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@v1
-
-    - name: Authenticate to Google Cloud
-      run: |
-       echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' > key.json
-       gcloud auth activate-service-account --key-file=key.json
-       gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} --zone ${{ env.GKE_ZONE }} --project ${{ env.PROJECT_ID }}
-       rm key.json
-
-    - name: Check if GKE Cluster exists
-      id: check_cluster
-      run: |
-        if gcloud container clusters describe ${{ env.GKE_CLUSTER }} --zone ${{ env.GKE_ZONE }} --project ${{ env.PROJECT_ID }}; then
-          echo "Cluster exists"
-          echo "CLUSTER_EXISTS=true" >> $GITHUB_ENV
-        else
-          echo "Cluster does not exist"
-          echo "CLUSTER_EXISTS=false" >> $GITHUB_ENV
-        fi
-
-    - name: Activate Service Account
-      run: |
-        echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' > key.json
-        gcloud auth activate-service-account --key-file=key.json
-        rm key.json
-
-    - name: Debug Active Service Account
-      run: gcloud auth list
-
-    - name: Create GKE Cluster if not exists
-      if: env.CLUSTER_EXISTS == 'false'
-      run: |
-       gcloud container clusters create ${{ env.GKE_CLUSTER }} \
-        --zone ${{ env.GKE_ZONE }} \
-        --num-nodes=1 \
-        --machine-type=e2-micro \
-        --project ${{ env.PROJECT_ID }}
-        
-    - name: Get GKE credentials
-      run: |
+        echo "${{ env.KUBE_CONFIG_DATA }}" > kubeconfig.yaml
+        export KUBECONFIG=kubeconfig.yaml
         gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} --zone ${{ env.GKE_ZONE }} --project ${{ env.PROJECT_ID }}
-
+        
     - name: Apply Kubernetes Deployment and Service
       run: |
         kubectl apply -f deployment.yml --validate=false
@@ -90,5 +58,5 @@ jobs:
 
     - name: Update Deployment with new image
       run: |
-        kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} ${{ env.IMAGE_NAME }}=${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+        kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} ${{ env.IMAGE_NAME }}=us.gcr.io/${{ env.REPOSITORY }}:${{ env.TAG }}
         kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }}
