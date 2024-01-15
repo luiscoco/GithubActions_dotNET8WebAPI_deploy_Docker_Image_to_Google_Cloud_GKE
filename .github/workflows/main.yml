@@ -1,0 +1,62 @@
+name: Build, Push and Deploy Docker Image to GKE with Kubernetes Configurations
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: extreme-axon-381209
+  IMAGE_NAME: my-dotnetwebapi
+  REPOSITORY: europe-southwest1-docker.pkg.dev/extreme-axon-381209/myfirstrepo
+  TAG: latest
+  GKE_CLUSTER: your-cluster-name
+  GKE_ZONE: your-cluster-zone
+  DEPLOYMENT_NAME: my-deployment
+  CONTAINER_PORT: 80
+
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
+
+    - name: Configure Docker for Google Cloud Artifact Registry
+      run: |
+        echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' | gcloud auth activate-service-account --key-file=-
+        gcloud auth configure-docker europe-southwest1-docker.pkg.dev --quiet
+
+    - name: Build Docker image
+      run: |
+        docker build -t ${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} .
+
+    - name: Push Docker image
+      run: |
+        docker push ${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+
+    - name: Verify the image was pushed
+      run: |
+        gcloud artifacts docker images list ${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+
+    - name: Get GKE credentials
+      run: |
+        gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} --zone ${{ env.GKE_ZONE }} --project ${{ env.PROJECT_ID }}
+
+    - name: Apply Kubernetes Deployment and Service
+      run: |
+        kubectl apply -f deployment.yml
+        kubectl apply -f service.yml
+
+    - name: Update Deployment with new image
+      run: |
+        kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} ${{ env.IMAGE_NAME }}=${{ env.REPOSITORY }}/${{
