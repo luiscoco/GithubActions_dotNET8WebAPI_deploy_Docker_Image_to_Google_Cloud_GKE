@@ -38,8 +38,6 @@ jobs:
 
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v1
-      with:
-        version: '290.0.1' # Replace with the desired version
 
     - name: Check if GKE Cluster exists
       id: check_cluster
