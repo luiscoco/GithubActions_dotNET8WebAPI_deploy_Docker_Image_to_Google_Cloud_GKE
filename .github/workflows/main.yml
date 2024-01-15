@@ -23,9 +23,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Debug Active Service Account
-      run: gcloud auth list
-
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
       with:
@@ -67,6 +64,9 @@ jobs:
         echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' > key.json
         gcloud auth activate-service-account --key-file=key.json
         rm key.json
+
+    - name: Debug Active Service Account
+      run: gcloud auth list
 
     - name: Create GKE Cluster if not exists
       if: env.CLUSTER_EXISTS == 'false'
