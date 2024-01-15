@@ -62,8 +62,12 @@ jobs:
     - name: Create GKE Cluster if not exists
       if: env.CLUSTER_EXISTS == 'false'
       run: |
-        gcloud container clusters create ${{ env.GKE_CLUSTER }} --zone ${{ env.GKE_ZONE }} --project ${{ env.PROJECT_ID }} [OTHER_PARAMETERS]
-
+        gcloud container clusters create ${{ env.GKE_CLUSTER }} \
+          --zone ${{ env.GKE_ZONE }} \
+          --num-nodes=3 \
+          --machine-type=e2-standard-2 \
+          --project ${{ env.PROJECT_ID }}
+       
     - name: Get GKE credentials
       run: |
         gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} --zone ${{ env.GKE_ZONE }} --project ${{ env.PROJECT_ID }}
