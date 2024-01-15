@@ -48,6 +48,22 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v1
 
+    - name: Check if GKE Cluster exists
+      id: check_cluster
+      run: |
+        if gcloud container clusters describe ${{ env.GKE_CLUSTER }} --zone ${{ env.GKE_ZONE }} --project ${{ env.PROJECT_ID }}; then
+          echo "Cluster exists"
+          echo "CLUSTER_EXISTS=true" >> $GITHUB_ENV
+        else
+          echo "Cluster does not exist"
+          echo "CLUSTER_EXISTS=false" >> $GITHUB_ENV
+        fi
+
+    - name: Create GKE Cluster if not exists
+      if: env.CLUSTER_EXISTS == 'false'
+      run: |
+        gcloud container clusters create ${{ env.GKE_CLUSTER }} --zone ${{ env.GKE_ZONE }} --project ${{ env.PROJECT_ID }} [OTHER_PARAMETERS]
+
     - name: Get GKE credentials
       run: |
         gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} --zone ${{ env.GKE_ZONE }} --project ${{ env.PROJECT_ID }}
