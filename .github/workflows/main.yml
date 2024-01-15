@@ -11,7 +11,7 @@ env:
   REPOSITORY: europe-southwest1-docker.pkg.dev/extreme-axon-381209/myfirstrepo
   TAG: latest
   GKE_CLUSTER: your-cluster-name
-  GKE_ZONE: your-cluster-zone
+  GKE_ZONE: europe-southwest1
   DEPLOYMENT_NAME: my-deployment
   CONTAINER_PORT: 80
 
