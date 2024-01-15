@@ -23,11 +23,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Authenticate to Google Cloud
-      uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
-      with:
-        service_account_key: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
-
     - name: Configure Docker for Google Cloud Artifact Registry
       run: |
         echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' | gcloud auth activate-service-account --key-file=-
