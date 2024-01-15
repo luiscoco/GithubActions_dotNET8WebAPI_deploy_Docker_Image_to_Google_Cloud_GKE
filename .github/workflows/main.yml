@@ -23,9 +23,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Debug Active Service Account
-      run: gcloud auth list
-
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
       with:
@@ -35,6 +32,18 @@ jobs:
       run: |
         echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' | gcloud auth activate-service-account --key-file=-
         gcloud auth configure-docker europe-southwest1-docker.pkg.dev --quiet
+
+    - name: Build Docker image
+      run: |
+        docker build -t ${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} .
+
+    - name: Push Docker image
+      run: |
+        docker push ${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+
+    - name: Verify the image was pushed
+      run: |
+        gcloud artifacts docker images list ${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}
 
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v1
@@ -56,15 +65,18 @@ jobs:
         gcloud auth activate-service-account --key-file=key.json
         rm key.json
 
+    - name: Debug Active Service Account
+      run: gcloud auth list
+
     - name: Create GKE Cluster if not exists
       if: env.CLUSTER_EXISTS == 'false'
       run: |
-        gcloud container clusters create ${{ env.GKE_CLUSTER }} \
-          --zone ${{ env.GKE_ZONE }} \
-          --num-nodes=3 \
-          --machine-type=e2-standard-2 \
-          --project ${{ env.PROJECT_ID }}
-
+       gcloud container clusters create ${{ env.GKE_CLUSTER }} \
+        --zone ${{ env.GKE_ZONE }} \
+        --num-nodes=1 \
+        --machine-type=f1-micro \
+        --project ${{ env.PROJECT_ID }}
+        
     - name: Get GKE credentials
       run: |
         gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} --zone ${{ env.GKE_ZONE }} --project ${{ env.PROJECT_ID }}
