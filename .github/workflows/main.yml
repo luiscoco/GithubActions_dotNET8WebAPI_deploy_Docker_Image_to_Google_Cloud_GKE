@@ -25,11 +25,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Set up Google Cloud SDK
-      uses: GoogleCloudPlatform/github-actions/setup-gcloud@v1
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
       with:
-        service_account_key: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
-        export_default_credentials: true
+        credentials_json: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
 
     - name: Configure Docker for Google Cloud Registry
       run: |
