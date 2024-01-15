@@ -43,6 +43,13 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v1
 
+    - name: Authenticate to Google Cloud
+      run: |
+       echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' > key.json
+       gcloud auth activate-service-account --key-file=key.json
+       gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} --zone ${{ env.GKE_ZONE }} --project ${{ env.PROJECT_ID }}
+       rm key.json
+
     - name: Check if GKE Cluster exists
       id: check_cluster
       run: |
