@@ -30,10 +30,10 @@ jobs:
       with:
         credentials_json: ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
 
-    - name: Configure Docker for Google Cloud Registry
+    - name: Configure Docker for Google Cloud Artifact Registry
       run: |
-        echo ${{ secrets.GOOGLE_CLOUD_CREDENTIALS }} | gcloud auth activate-service-account --key-file=-
-        gcloud auth configure-docker us.gcr.io --quiet
+        echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' | gcloud auth activate-service-account --key-file=-
+        gcloud auth configure-docker europe-southwest1-docker.pkg.dev --quiet
 
     - name: Build Docker image
       run: |
