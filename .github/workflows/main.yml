@@ -61,9 +61,9 @@ jobs:
 
     - name: Activate Service Account
       run: |
-       echo "${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}" > key.json
-       gcloud auth activate-service-account --key-file=key.json
-       rm key.json
+        echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' > key.json
+        gcloud auth activate-service-account --key-file=key.json
+        rm key.json
 
     - name: Create GKE Cluster if not exists
       if: env.CLUSTER_EXISTS == 'false'
