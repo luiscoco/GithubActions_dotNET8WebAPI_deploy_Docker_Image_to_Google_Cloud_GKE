@@ -3,7 +3,7 @@ name: Build, Push and Deploy Docker Image to GKE with Kubernetes Configurations
 on:
   push:
     branches:
-      - main
+      - master
 
 env:
   PROJECT_ID: extreme-axon-381209
